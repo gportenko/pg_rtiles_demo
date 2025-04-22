@@ -1,0 +1,13 @@
+insert into rtiles.layers (name, source, fields) values ('beach', 'map_layers.beach', '{}');
+insert into rtiles.layers (name, source, fields) values ('building', 'map_layers.building', ARRAY ['height']);
+insert into rtiles.layers (name, source, fields) values ('burjkhalifa', 'map_layers.burjkhalifa', ARRAY ['height']);
+insert into rtiles.layers (name, source, fields) values ('building_label', 'map_layers.building_label', ARRAY ['housenumber']);
+insert into rtiles.layers (name, source, fields) values ('district', 'map_layers.district', ARRAY ['level']);
+insert into rtiles.layers (name, source, fields) values ('district_label', 'map_layers.district_label', ARRAY ['level', 'name']);
+insert into rtiles.layers (name, source, fields) values ('highway', 'map_layers.highway', ARRAY ['type', 'name']);
+insert into rtiles.layers (name, source, fields) values ('road', 'map_layers.road', ARRAY ['type', 'name']);
+insert into rtiles.layers (name, source, fields) values ('label', 'map_layers.label', ARRAY ['type', 'value']);
+insert into rtiles.layers (name, source, fields) values ('water', 'map_layers.water', '{}');
+insert into rtiles.layers (name, source, fields) values ('surface', 'map_layers.surface', ARRAY ['type']);
+insert into rtiles.layers (name, source, fields) values ('land', 'osm.land_polygons', '{}');
+insert into rtiles.layers (name, source, clustered, fields, roles) values ('ship', 'map_layers.ship', true, ARRAY ['type', 'name', 'angle', 'state'], ARRAY ['dispatcher']);

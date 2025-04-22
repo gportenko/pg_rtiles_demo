@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rtiles example</title>
+    <link rel="stylesheet" href="http://localhost:8099/maplibre-gl.css">
+    <link rel="stylesheet" href="http://localhost:8099/style.css">
+    <script src="http://localhost:8099/maplibre-gl.js"></script>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="switch-3d-container">
+      <span class="switch-3d-label">3D</span>
+        <label class="switch-3d">
+          <input type="checkbox" id="toggle-3d-switch">
+          <span class="slider round"></span>
+        </label>
+      </span> 
+    </div>
+
+    <script>
+        document.getElementById("toggle-3d-switch").checked = false;
+
+        const map = new maplibregl.Map({
+            container: 'map',
+            style: 'http://localhost:8099/style.json',
+            center: [55.2, 25.1],
+            zoom: 10
+        });
+        const bounds = [
+            [54.865648, 24.908692],
+            [55.512693, 25.244526]
+        ]; 
+        map.setMaxBounds(bounds);
+        map.addControl(new maplibregl.NavigationControl());
+
+        map.on('error', (e) => {
+            if (e.error && e.error.status === 401) {
+                console.error(`Tile request failed: ${e.error}`);
+                window.location.href = "/auth/login";
+            }
+        });
+
+        map.on('load', function () {
+
+            map.addLayer({
+                id: 'background',
+                type: 'background',
+                paint: {
+                    'background-color': 'rgb(170, 211, 223)'
+                }
+            });
+
+            map.addSource('land', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=land'
+                ]
+            });
+            map.addLayer({
+                id: 'land',
+                type: 'fill',
+                source: 'land',
+                'source-layer': 'land', // layer name inside tile
+                paint: {
+                    'fill-color': 'rgb(242, 239, 233)'
+                }
+            });
+
+            map.addSource('water', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=water'
+                ]
+            });
+            map.addLayer({
+                id: 'water',
+                type: 'fill',
+                source: 'water',
+                'source-layer': 'water',
+                paint: {
+                    'fill-color': 'rgb(170, 211, 223)'
+                }
+            });
+
+            map.addSource('beach', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=beach'
+                ]
+            });
+            map.addLayer({
+                id: 'beach',
+                type: 'fill',
+                source: 'beach',
+                'source-layer': 'beach',
+                paint: {
+                    'fill-color': 'rgb(247, 250, 191)',
+                    'fill-opacity': 0.5
+                }
+            });
+
+            map.addSource('surface', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=surface'
+                ]
+            });
+            map.addLayer({
+                id: 'surface-sand',
+                type: 'fill',
+                source: 'surface',
+                'source-layer': 'surface',
+                filter: ['==', 'type', 'sand'],
+                paint: {
+                    'fill-color': 'rgb(247, 250, 191)'
+                }
+            });
+            map.addLayer({
+                id: 'surface-vegetation',
+                type: 'fill',
+                source: 'surface',
+                'source-layer': 'surface', // layer name inside tile
+                filter: ['==', 'type', 'vegetation'],
+                paint: {
+                    'fill-color': 'rgb(173, 209, 158)'
+                }
+            });
+
+            map.addSource('road', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=road'
+                ]
+            });
+            map.addLayer({
+                id: 'road',
+                type: 'line',
+                source: 'road',
+                'source-layer': 'road',
+                minzoom: 13,
+                maxzoom: 24,
+                paint: {
+                    'line-color': '#ffffff',
+                    'line-width': 2
+                }
+            });
+            map.addLayer({
+              id: 'road-label',
+              type: 'symbol',
+              source: 'road',
+              'source-layer': 'road',
+              minzoom: 15,
+              layout: {
+                'text-field': ['get', 'name'],
+                'text-size': 12,
+                'symbol-placement': 'line',
+              },
+              paint: {
+                'text-color': '#222222',
+                'text-halo-color': '#ffffff',
+                'text-halo-width': 2
+              }
+            });
+
+            map.addSource('highway', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=highway'
+                ]
+            });
+            map.addLayer({
+                id: 'highway-other',
+                type: 'line',
+                source: 'highway',
+                'source-layer': 'highway',
+                paint: {
+                    'line-color': 'rgb(223, 200, 194)',
+                    'line-width': 3
+                }
+            });
+            map.addLayer({
+              id: 'highway-label',
+              type: 'symbol',
+              source: 'highway',
+              'source-layer': 'highway',
+              minzoom: 12,
+              layout: {
+                'text-field': ['get', 'name'],
+                'text-size': 13,
+                'symbol-placement': 'line',
+              },
+              paint: {
+                'text-color': '#222222',
+                'text-halo-color': '#ffffff',
+                'text-halo-width': 2
+              }
+            });
+
+            map.addSource('building', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layers=building,burjkhalifa'
+                ]
+            });
+            map.addLayer({
+                id: 'building',
+                source: 'building',
+                'source-layer': 'building',
+                type: 'fill',
+                maxzoom: 14,
+                paint: {
+                    'fill-color': '#ccb'
+                }
+            }); 
+            map.addLayer({
+                id: 'burjkhalifa',
+                source: 'building',
+                'source-layer': 'burjkhalifa',
+                type: 'fill',
+                maxzoom: 14,
+                paint: {
+                    'fill-color': '#ccb'
+                }
+            });
+            map.addLayer({
+                id: 'building-extruded',
+                source: 'building',
+                'source-layer': 'building',
+                type: 'fill-extrusion',
+                minzoom: 14,
+                paint: {
+                    'fill-extrusion-color': '#bba',
+                    'fill-extrusion-height': ['get', 'height'],
+                    'fill-extrusion-base': 0,
+                    'fill-extrusion-opacity': 0.8
+                }
+            });
+            map.addLayer({
+                id: 'burjkhalifa-extruded',
+                source: 'building',
+                'source-layer': 'burjkhalifa',
+                type: 'fill-extrusion',
+                minzoom: 14,
+                paint: {
+                    'fill-extrusion-color': '#bba',
+                    'fill-extrusion-height': ['get', 'height'],
+                    'fill-extrusion-base': ['get', 'extrusion_base']
+                }
+            });
+
+            map.addSource('building_label', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=building_label'
+                ]
+            }); 
+            map.addLayer({
+              id: "building_label",
+              type: "symbol",
+              source: "building_label",
+              'source-layer': 'building_label',
+              minzoom: 16,
+              layout: {
+                "text-field": ["get", "housenumber"],
+                "text-size": 12,
+                "text-anchor": "center"
+              },
+              paint: {
+                "text-color": "#666"
+              }
+            });
+
+            map.addSource('district', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=district'
+                ]
+            }); 
+            map.addLayer({
+              id: "district-border",
+              type: "line",
+              source: "district",
+              'source-layer': "district",
+              layout: {},
+              filter: ['<=', 'level', 8],
+              paint: {
+                  "line-color": "#ccc",
+                  "line-width": 2,
+                  "line-opacity": 0.8,
+                  "line-dasharray": [4, 2] // 4px dash, 2px gap
+              }
+            });
+
+            map.addSource('district_label', {
+                type: 'vector',
+                tiles: [
+                    'https://localhost/tile/{z}/{x}/{y}?layer=district_label'
+                ]
+            }); 
+            map.addLayer({
+              id: "district_label",
+              type: "symbol",
+              source: "district_label",
+              'source-layer': 'district_label',
+              layout: {
+                "text-field": ["get", "name"],
+                "text-size": 13,
+                "text-anchor": "center"
+              },
+              paint: {
+                "text-color": "#999"
+              }
+            });
+
+           const container_ship_image = new Image();
+           container_ship_image.src = 'https://localhost/icon/container-ship.png';
+           const motorboat_image = new Image();
+           motorboat_image.src = 'https://localhost/icon/motorboat.png';
+           container_ship_image.onload = () => {
+             motorboat_image.onload = () => {
+                map.addImage('container-ship', container_ship_image);
+                map.addImage('motorboat', motorboat_image);
+                map.addSource('ship', {
+                    type: 'vector',
+                    tiles: [
+                        'https://localhost/tile/{z}/{x}/{y}?layer=ship'
+                    ]
+                });
+                console.log("add layer container_ship");
+                map.addLayer({
+                    'id': 'container_ship',
+                    'type': 'symbol',
+                    'source': 'ship',
+                    'source-layer': 'ship',
+                    filter: [
+                        'all',
+                        ['==', 'type', 'CONTAINER_SHIP'],
+                        ['!has', 'cluster_size']
+                    ], 
+                    'layout': {
+                        'icon-image': 'container-ship',
+                        'icon-size': [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, 0.8,  // At zoom 10
+                            15, 1,
+                            20, 1.2
+                        ],
+                        'icon-size': 0.1,
+                        'icon-rotate': ['get', 'angle'],
+                        'icon-allow-overlap': true
+                    }
+                });
+                map.addLayer({
+                    'id': 'motorboat',
+                    'type': 'symbol',
+                    'source': 'ship',
+                    'source-layer': 'ship',
+                    'filter': [
+                        'all',
+                        ['==', 'type', 'MOTORBOAT'],
+                        ['!has', 'cluster_size']
+                    ],
+                    'layout': {
+                        'icon-image': 'motorboat',
+                        'icon-size': [
+                            'interpolate', ['linear'], ['zoom'],
+                            10, 0.05,  // At zoom 10
+                            15, 0.05,
+                            20, 0.06
+                        ],
+                        'icon-rotate': ['get', 'angle'],
+                        'icon-allow-overlap': true
+                    }
+                });
+                map.addLayer({
+                    id: 'container_ship_cluster_circle',
+                    type: 'circle',
+                    source: 'ship',
+                    'source-layer': 'ship',
+                    filter: [
+                        'all',
+                        ['>', 'cluster_size', 1]
+                    ],
+                    paint: {
+                        'circle-radius': 16,
+                        'circle-color': 'rgb(10, 95, 240)',
+                        'circle-opacity': 1
+                    }
+                });
+                map.addLayer({
+                    id: 'container_ship_cluster_number',
+                    type: 'symbol',
+                    source: 'ship',
+                    'source-layer': 'ship',
+                    filter: [
+                        'all',
+                        ['>', 'cluster_size', 1]
+                    ],
+                    layout: {
+                      'text-field': ['get', 'cluster_size'],
+                      'text-size': 14
+                    },
+                    paint: {
+                      'text-color': '#fff'
+                    }
+                });
+
+                map.addLayer({
+                    'id': 'motorboat_cluster',
+                    'type': 'symbol',
+                    'source': 'ship',
+                    'source-layer': 'ship',
+                    'filter': [
+                        'all',
+                        ['==', 'type', 'MOTORBOAT'],
+                        ['>', 'count', 1]
+                    ],
+                    'layout': {
+                        'icon-image': 'motorboat',
+                        'icon-size': 0.6,
+                        'icon-rotate': 90,
+                        'icon-allow-overlap': true
+                    }
+                });
+
+                function updateLayer() {
+                    const source = map.getSource('ship');
+                    if (source) {
+                        source.setTiles([
+                            `https://localhost/tile/{z}/{x}/{y}?layer=ship`
+                            ]);
+                    }
+                }
+
+                let updateInterval = null; 
+
+                function setUpdateInterval() {
+                    if (updateInterval) clearInterval(updateInterval);
+
+                    const zoom = map.getZoom();
+
+                    let interval = 2000;
+                    if (zoom > 11 && zoom <= 14) interval = 6000;
+                    if (zoom <= 11) interval = 20000;
+
+                    updateInterval = setInterval(updateLayer, interval);
+                }
+
+                setUpdateInterval();
+                map.on('zoomend', setUpdateInterval);
+             }
+           }
+        });
+
+        document.getElementById('toggle-3d-switch').addEventListener('change', (event) => {
+            if (event.target.checked) {
+                map.setPitch(60);
+            } else {
+                map.setPitch(0);
+            }
+        });
+
+    </script>
+</body>
+</html>

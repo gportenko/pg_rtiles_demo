@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    container_name: keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+      # - KC_HTTP_PORT=7081
+      - JAVA_OPTS_APPEND=-Dkeycloak.migration.strategy=OVERWRITE_EXISTING 
+      # - JAVA_OPTS_APPEND=-Dkeycloak.migration.strategy=OVERWRITE_EXISTING -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
+    ports:
+      - "7081:8080"
+      # - "5005:5005"
+    # network_mode: host
+    networks:
+      - rtiles_network
+    entrypoint: /bin/bash
+    command: |
+        -c "
+        /opt/keycloak/bin/kc.sh start-dev --import-realm
+        "
+    volumes:
+      - ./gateway/keycloak/realm-import:/opt/keycloak/data/import
+      - ./gateway/keycloak/providers:/opt/keycloak/providers
+ 
+  openresty:
+    image: rtiles-openresty
+    build: ./gateway
+    container_name: openresty
+    ports:
+      - "8099:80"
+      - "443:443"
+    extra_hosts:
+      - "myhost:172.17.0.1"
+    networks:
+      - rtiles_network
+    volumes:
+      - ./gateway/conf/nginx.conf:/usr/local/openresty/nginx/conf/nginx.conf
+      - ./gateway/index.html:/usr/local/openresty/nginx/html/index.html
+      - ./gateway/static:/usr/local/openresty/nginx/html
+      - ./gateway/lua:/usr/local/openresty/nginx/lua
+      - ./gateway/certs:/usr/local/openresty/nginx/conf/certs
+    depends_on:
+      - keycloak
+      - tileserver
+
+  db:
+    image: rtiles-postgres
+    build: ./postgres
+    container_name: rtiles-db
+    environment:
+      - POSTGRES_DB=rtiles
+      - POSTGRES_USER=rtiles
+      - POSTGRES_PASSWORD=rtiles
+    ports:
+      - "5435:5432"
+    networks:
+      - rtiles_network
+    volumes:
+      - rtiles_postgres_volume:/var/lib/postgresql/data
+
+  db-initializer:
+    image: db-initializer
+    build: ./db-initializer
+    container_name: db-initializer
+    environment:
+      - PGPASSWORD=rtiles
+    networks:
+      - rtiles_network
+    depends_on:
+      - db
+    volumes:
+      - ./db-initializer/scripts:/scripts
+    command: |
+        sh -c "
+        chmod +x /scripts/*.sh &&
+        /scripts/init-osm-data.sh &&
+        /scripts/init-map-layers.sh &&
+        /scripts/init-rtiles.sh
+        "
+
+  tileserver:
+    image: rtiles-tileserver
+    build: ./tileserver
+    container_name: rtiles-tileserver
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_DBNAME=rtiles
+      - DB_USER=rtiles
+      - DB_PASSWORD=rtiles
+    ports:
+      - "3000:3000"
+    networks:
+      - rtiles_network
+    depends_on:
+      - db
+
+networks:
+  rtiles_network:
+    driver: bridge
+
+volumes:
+  rtiles_postgres_volume:
